@@ -1,10 +1,19 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ImageBackground, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ImageBackground,
+  ScrollView,
+  Alert,
+} from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootTabParamList } from './types';
 import StudentBottomNav from './BottomNav.tsx';
 import Icon from 'react-native-vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type AuthRouteProp = RouteProp<RootTabParamList, 'Auth'>;
 type AuthNavProp = NativeStackNavigationProp<RootTabParamList>;
@@ -14,12 +23,47 @@ const Settings: React.FC = () => {
   const route = useRoute<AuthRouteProp>();
   const { role } = route.params;
 
+  const handleLogout = async () => {
+    Alert.alert('Confirm Logout', 'Are you sure you want to log out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Logout',
+        style: 'destructive',
+        onPress: async () => {
+          await AsyncStorage.removeItem('userSession');
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Auth' }],
+          });
+        },
+      },
+    ]);
+  };
+
+  const handleTermsNavigation = () => {
+    navigation.navigate('TermsAndConditions' as never);
+  };
+
+  const handleAboutNavigation = () => {
+    navigation.navigate('About' as never);
+  };
+
+  const handleChangePasswordNavigation = () => {
+    if (role === 'Student') {
+      navigation.navigate('ChangeStudentPassword' as never);
+    } else if (role === 'Lecturer') {
+      navigation.navigate('ChangeLecturerPassword' as never);
+    } else {
+      Alert.alert('Error', 'Invalid user role — cannot change password.');
+    }
+  };
+
   const settingsOptions = [
-    { name: 'Profile', icon: 'person-circle-outline', color: '#4CAF50' },     
-    { name: 'Notifications', icon: 'notifications-outline', color: '#064f62' }, 
-    { name: 'Change Password', icon: 'lock-closed-outline', color: '#00BCD4' }, 
-    { name: 'About', icon: 'information-circle-outline', color: '#1976D2' },    
-    { name: 'Logout', icon: 'log-out-outline', color: '#E53935' },              
+    { name: 'Profile', icon: 'person-circle-outline', color: '#4CAF50' },
+    { name: 'Terms & Conditions', icon: 'document-text-outline', color: '#064f62', action: handleTermsNavigation },
+    { name: 'Change Password', icon: 'lock-closed-outline', color: '#00BCD4', action: handleChangePasswordNavigation },
+    { name: 'About', icon: 'information-circle-outline', color: '#1976D2', action: handleAboutNavigation },
+    { name: 'Logout', icon: 'log-out-outline', color: '#E53935', action: handleLogout },
   ];
 
   return (
@@ -37,15 +81,17 @@ const Settings: React.FC = () => {
                 key={option.name}
                 style={[styles.card, { borderColor: option.color }]}
                 activeOpacity={0.7}
+                onPress={option.action ? option.action : undefined}
               >
                 <View style={styles.cardRow}>
                   <View style={styles.optionLeft}>
-                    <View style={[styles.iconWrapper, { backgroundColor: option.color + '33' }]}>
-                      <Icon
-                        name={option.icon}
-                        size={24}
-                        color={option.color}
-                      />
+                    <View
+                      style={[
+                        styles.iconWrapper,
+                        { backgroundColor: option.color + '33' },
+                      ]}
+                    >
+                      <Icon name={option.icon} size={24} color={option.color} />
                     </View>
                     <Text style={[styles.optionText, { color: option.color }]}>
                       {option.name}

@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   FlatList,
-  ScrollView,
   ImageBackground,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -84,7 +83,8 @@ const StudentModules: React.FC = () => {
         const transformed: Module[] = data.map((item: any) => ({
           RowKey: item.rowKey,
           code: item.moduleCode,
-          moduleName: allModules.find((m) => m.code === item.moduleCode)?.moduleName || 'N/A',
+          moduleName:
+            allModules.find((m) => m.code === item.moduleCode)?.moduleName || 'N/A',
         }));
         setAssignedModules(transformed);
       } catch (error) {
@@ -148,26 +148,26 @@ const StudentModules: React.FC = () => {
       style={styles.background}
     >
       <View style={styles.mainContainer}>
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
+        <View style={styles.container}>
           <Text style={styles.header}>Assigned Modules</Text>
 
           {assignedModules.length === 0 ? (
             <Text style={styles.noModules}>No modules assigned yet.</Text>
           ) : (
-            <FlatList
-              data={assignedModules}
-              keyExtractor={(item) => item.RowKey}
-              renderItem={renderModule}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.cardList}
-            />
+            <View style={styles.scrollArea}>
+              <FlatList
+                data={assignedModules}
+                keyExtractor={(item) => item.RowKey}
+                renderItem={renderModule}
+                showsVerticalScrollIndicator={true}
+                contentContainerStyle={styles.cardList}
+                style={styles.scrollList}
+              />
+            </View>
           )}
 
           <Text style={[styles.header, { marginTop: 25 }]}>Add Module</Text>
+
           <View style={styles.form}>
             <Picker
               selectedValue={selectedModule}
@@ -192,7 +192,7 @@ const StudentModules: React.FC = () => {
               <Text style={styles.buttonText}>Add Module</Text>
             </TouchableOpacity>
           </View>
-        </ScrollView>
+        </View>
 
         <View style={styles.navContainer}>
           <StudentBottomNav
@@ -208,32 +208,98 @@ const StudentModules: React.FC = () => {
 export default StudentModules;
 
 const styles = StyleSheet.create({
-  background: { flex: 1 },
-  mainContainer: { flex: 1 },
-  scrollContent: { padding: 20, paddingBottom: 120, alignItems: 'center' },
-  header: { fontSize: 22, fontWeight: 'bold', color: '#064f62', marginBottom: 10 },
-  noModules: { fontSize: 16, color: '#aaa', marginVertical: 10 },
-  cardList: { paddingVertical: 10 },
+  background: {
+    flex: 1,
+    backgroundColor: '#f9f0f0ff',
+  },
+  mainContainer: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 20,
+    width: '100%',
+  },
+  header: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#064f62',
+    marginBottom: 10,
+  },
+  scrollArea: {
+    flex: 1,
+    width: '100%',
+    padding: 10
+  },
+  scrollList: {
+    width: '100%',
+  },
+  cardList: {
+    paddingBottom: 10,
+  },
   card: {
     backgroundColor: '#a4c984',
-    width: 220,
-    height: 120,
-    borderRadius: 16,
-    marginRight: 12,
+    width: '100%',
+    borderRadius: 20,
+    marginVertical: 8,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 20,
     shadowColor: '#000',
     shadowOpacity: 0.15,
     shadowRadius: 5,
     shadowOffset: { width: 0, height: 3 },
     elevation: 4,
   },
-  moduleCode: { fontSize: 18, fontWeight: 'bold', color: '#064f62' },
-  moduleName: { fontSize: 15, color: '#064f62', textAlign: 'center', marginTop: 6, paddingHorizontal: 10 },
-  form: { alignItems: 'center', marginTop: 15 },
-  picker: { backgroundColor: '#064f62', borderRadius: 12, width: 260, marginVertical: 10, color: '#fff' },
-  button: { backgroundColor: '#6bbfe4', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 12, alignItems: 'center', marginTop: 10 },
-  buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  navContainer: { position: 'absolute', bottom: 0, width: '100%' },
+  moduleCode: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#064f62',
+  },
+  moduleName: {
+    fontSize: 15,
+    color: '#064f62',
+    textAlign: 'center',
+    marginTop: 6,
+    paddingHorizontal: 10,
+  },
+  picker: {
+    backgroundColor: '#064f62',
+    borderRadius: 12,
+    borderWidth: 1,
+    color: 'white',
+    borderColor: '#6bbfe4',
+    width: 260,
+    marginVertical: 10,
+  },
+  button: {
+    backgroundColor: '#6bbfe4',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  noModules: {
+    color: '#aeacabff',
+    fontSize: 16,
+    marginVertical: 10,
+  },
+  form: {
+    alignItems: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  navContainer: {
+    backgroundColor: '#f9f0f0ff',
+  },
 });

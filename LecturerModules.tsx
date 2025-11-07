@@ -37,7 +37,7 @@ const LecturerModules: React.FC = () => {
   const [loadingAssigned, setLoadingAssigned] = useState(true);
 
   const route = useRoute<AuthRouteProp>();
-  const { role } = route.params ?? { role: "lecturer" }; // fallback
+  const { role } = route.params ?? { role: "lecturer" };
 
   useEffect(() => {
     const loadLecturerID = async () => {
@@ -147,72 +147,71 @@ const LecturerModules: React.FC = () => {
     (mod) => !assignedModules.some((assigned) => assigned.code === mod.code)
   );
 
-  return (
-    <ImageBackground
-      source={require('./assets/images/BackgroundImage.jpg')} 
-      style={styles.background}
-    >
-      <View style={styles.mainContainer}>
-        <ScrollView
-          contentContainerStyle={styles.container}
-          showsVerticalScrollIndicator={false}
-        >
-          <Text style={styles.header}>Assigned Modules</Text>
+ return (
+  <ImageBackground
+    source={require('./assets/images/BackgroundImage.jpg')}
+    style={styles.background}
+  >
+    <View style={styles.mainContainer}>
+      <View style={styles.container}>
+        <Text style={styles.header}>Assigned Modules</Text>
 
-          {assignedModules.length === 0 ? (
-            <Text style={styles.noModules}>No modules assigned yet.</Text>
-          ) : (
+        {assignedModules.length === 0 ? (
+          <Text style={styles.noModules}>No modules assigned yet.</Text>
+        ) : (
+          <View style={[styles.scrollArea]} >
             <FlatList
               data={assignedModules}
               keyExtractor={(item) => item.RowKey}
               renderItem={renderModule}
-              horizontal
-              showsHorizontalScrollIndicator={false}
+              showsVerticalScrollIndicator={true}
               contentContainerStyle={styles.cardList}
+              style={styles.scrollList}
             />
-          )}
-
-          <Text style={[styles.header, { marginTop: 25 }]}>Add Module</Text>
-
-          <View style={styles.form}>
-            <Picker
-              selectedValue={selectedModule}
-              onValueChange={(itemValue) => setSelectedModule(itemValue)}
-              style={styles.picker}
-            >
-              <Picker.Item label="Select a Module" value="" />
-              {availableModules.map((mod) => (
-                <Picker.Item
-                  label={`${mod.code} - ${mod.moduleName}`}
-                  value={mod.code}
-                  key={mod.RowKey}
-                />
-              ))}
-            </Picker>
-
-            <TouchableOpacity
-              style={[
-                styles.button,
-                { opacity: !selectedModule ? 0.6 : 1 },
-              ]}
-              onPress={AddModule}
-              disabled={!selectedModule}
-            >
-              <Text style={styles.buttonText}>Add Module</Text>
-            </TouchableOpacity>
           </View>
-        </ScrollView>
+        )}
 
-        {/* Bottom Nav pinned */}
-        <View style={styles.navContainer}>
-          <LecturerBottomNav
-            navigation={navigation}
-            role={role as "student" | "lecturer" | "admin"}
-          />
+        <Text style={[styles.header, { marginTop: 25 }]}>Add Module</Text>
+
+        <View style={styles.form}>
+          <Picker
+            selectedValue={selectedModule}
+            onValueChange={(itemValue) => setSelectedModule(itemValue)}
+            style={styles.picker}
+          >
+            <Picker.Item label="Select a Module" value="" />
+            {availableModules.map((mod) => (
+              <Picker.Item
+                label={`${mod.code} - ${mod.moduleName}`}
+                value={mod.code}
+                key={mod.RowKey}
+              />
+            ))}
+          </Picker>
+
+          <TouchableOpacity
+            style={[
+              styles.button,
+              { opacity: !selectedModule ? 0.6 : 1 },
+            ]}
+            onPress={AddModule}
+            disabled={!selectedModule}
+          >
+            <Text style={styles.buttonText}>Add Module</Text>
+          </TouchableOpacity>
         </View>
       </View>
-    </ImageBackground>
-  );
+
+      {/* Bottom navigation fixed at bottom */}
+      <View style={styles.navContainer}>
+        <LecturerBottomNav
+          navigation={navigation}
+          role={role as "student" | "lecturer" | "admin"}
+        />
+      </View>
+    </View>
+  </ImageBackground>
+);
 };
 
 export default LecturerModules;
@@ -220,15 +219,17 @@ export default LecturerModules;
 const styles = StyleSheet.create({
   background: {
     flex: 1,
-    backgroundColor: '#f9f0f0ff', // snow
+    backgroundColor: '#f9f0f0ff',
   },
   mainContainer: {
     flex: 1,
     justifyContent: 'space-between',
   },
   container: {
-    paddingVertical: 20,
+    flex: 1,
     alignItems: 'center',
+    paddingVertical: 20,
+    width: '100%',
   },
   header: {
     fontSize: 22,
@@ -236,17 +237,25 @@ const styles = StyleSheet.create({
     color: '#064f62ff',
     marginBottom: 10,
   },
+  scrollArea: {
+    flex: 1,
+    width: '100%',
+    padding: 10
+  },
+  scrollList: {
+    width: '100%',
+  },
   cardList: {
-    paddingHorizontal: 10,
+    paddingBottom: 10,
   },
   card: {
     backgroundColor: '#a4c984ff',
-    width: 220,
-    height: 120,
-    borderRadius: 16,
-    marginRight: 12,
+    width: '100%',
+    borderRadius: 20, 
+    marginVertical: 8,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 20,
     shadowColor: '#000',
     shadowOpacity: 0.15,
     shadowRadius: 5,
@@ -269,6 +278,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#064f62ff',
     borderRadius: 12,
     borderWidth: 1,
+    color: 'white',
     borderColor: '#6bbfe4ff',
     width: 260,
     marginVertical: 10,
@@ -302,3 +312,5 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9f0f0ff',
   },
 });
+
+

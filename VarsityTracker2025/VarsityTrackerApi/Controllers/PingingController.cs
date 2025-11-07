@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
+using VarsityTrackerApi.Models.Pinging;
 
 namespace VarsityTrackerApi.Controllers
 {
@@ -9,6 +11,13 @@ namespace VarsityTrackerApi.Controllers
     [ApiController]
     public class PingingController : ControllerBase
     {
+        private static ConcurrentDictionary<string, int> _pingCounts = new();
+        private readonly IHttpClientFactory _httpClientFactory;
+
+        public PingingController(IHttpClientFactory httpClientFactory)
+        {
+            _httpClientFactory = httpClientFactory;
+        }
 
         // Temporary storage
         private static string _espPingString;
@@ -35,25 +44,48 @@ namespace VarsityTrackerApi.Controllers
         // POST: Receive React Ping
         // =============================================================
         [HttpPost("ReceiveReactPing")]
-        public IActionResult ReceiveReactPing([FromBody] string reactPingString)
+        public async Task<IActionResult> ReceiveReactPing([FromBody] PingRequest request)
         {
-            if (string.IsNullOrWhiteSpace(reactPingString))
-                return BadRequest("React ping string cannot be empty.");
+            if (request == null || string.IsNullOrWhiteSpace(request.LessonId) || string.IsNullOrWhiteSpace(request.StudentNumber))
+                return BadRequest("LessonId and StudentNumber are required.");
 
-            _reactPingString = reactPingString.Trim();
-            _reactPingTime = DateTime.UtcNow;
+            string key = $"{request.LessonId}_{request.StudentNumber}";
 
-            // Optional: Extract and decrypt encrypted student number if provided
-            string encryptedPart = null;
-            if (_reactPingString.Contains("/"))
+            // Increment counter (max 3)
+            int currentCount = _pingCounts.GetOrAdd(key, 0);
+            if (currentCount < 3)
             {
-                encryptedPart = _reactPingString.Split('/').Last();
-                string decryptedStudentId = DecryptStudentNumber(encryptedPart);
-                Console.WriteLine($"[DEBUG] Decrypted Student ID: {decryptedStudentId}");
+                currentCount++;
+                _pingCounts[key] = currentCount;
             }
 
-            return Ok("React ping received.");
+            // Determine attendance status
+            string status = currentCount < 3 ? "Absent" : "Present";
+
+            Console.WriteLine($"[PING] Lesson: {request.LessonId}, Student: {request.StudentNumber}, Count: {currentCount}, Status: {status}");
+
+            // Step 2: Update report status automatically in Lesson API
+            var client = _httpClientFactory.CreateClient();
+            var updateUrl = $"https://varsitytrackerapi20250619102431-b3b3efgeh0haf4ge.uksouth-01.azurewebsites.net/api/Lesson/update_report_status" +
+                            $"?lessonId={request.LessonId}&studentNumber={request.StudentNumber}&newStatus={status}";
+
+            var response = await client.PutAsync(updateUrl, null);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"[ERROR] Could not update status for {request.StudentNumber}: {response.StatusCode}");
+            }
+
+            // Return status summary
+            return Ok(new
+            {
+                LessonId = request.LessonId,
+                StudentNumber = request.StudentNumber,
+                PingCount = currentCount,
+                Status = status
+            });
         }
+
 
         // =============================================================
         // GET: Compare ESP & React Pings

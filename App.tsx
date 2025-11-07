@@ -37,6 +37,10 @@ import LecturersCalendar from './LecturersCalendar.tsx';
 import LecturerQrCamera from './LecturerQrCamera.tsx';
 import StudentQrCamera from './StudentQrCamera.tsx';
 import Settings from './Settings.tsx';
+import TermsAndConditions from './TermsAndConditions.tsx';
+import About from './About.tsx';
+import ChangeStudentPassword from './ChangeStudentPassword.tsx';
+import ChangeLecturerPassword from './ChangeLecturerPassword.tsx';
 
 const Stack = createNativeStackNavigator<RootTabParamList>();
 
@@ -175,6 +179,10 @@ export default function App() {
         }}
         </StackNav.Screen>
         <StackNav.Screen name="Settings" component={Settings} /> 
+        <StackNav.Screen name="TermsAndConditions" component={TermsAndConditions} /> 
+        <StackNav.Screen name="About" component={About} /> 
+        <StackNav.Screen name="ChangeStudentPassword" component={ChangeStudentPassword} /> 
+        <StackNav.Screen name="ChangeLecturerPassword" component={ChangeLecturerPassword} /> 
       </StackNav.Navigator>
     </NavigationContainer>
   );

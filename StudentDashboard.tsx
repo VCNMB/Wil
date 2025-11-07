@@ -10,12 +10,17 @@ import {
   ImageBackground,
   ActivityIndicator,
 } from 'react-native';
-import { useRoute, useNavigation, RouteProp, CommonActions } from '@react-navigation/native';
+import {
+  useRoute,
+  useNavigation,
+  RouteProp,
+} from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootTabParamList } from './types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import StudentBottomNav from './BottomNav.tsx';
 import * as Progress from 'react-native-progress';
+
+import StudentBottomNav from './BottomNav';
+import { RootTabParamList } from './types';
 
 type AuthRouteProp = RouteProp<RootTabParamList, 'Auth'>;
 type AuthNavProp = NativeStackNavigationProp<RootTabParamList>;
@@ -26,6 +31,7 @@ const StudentDashboard: React.FC = () => {
   const { role } = route.params;
 
   const [studentName, setStudentName] = useState<string>('');
+  const [studentId, setStudentId] = useState<string>('');
   const [progressData, setProgressData] = useState<{
     Attended: number;
     TotalLessons: number;
@@ -42,22 +48,27 @@ const StudentDashboard: React.FC = () => {
         if (!session) return;
 
         const user = JSON.parse(session);
-        const studentId = user.studentNumber;
+        const studentNumber = user.studentNumber;
+        setStudentId(studentNumber);
 
         const response = await fetch(
-          `https://varsitytrackerapi20250619102431-b3b3efgeh0haf4ge.uksouth-01.azurewebsites.net/Access/get_details_students?id=${studentId}`
+          `https://varsitytrackerapi20250619102431-b3b3efgeh0haf4ge.uksouth-01.azurewebsites.net/Access/get_details_students?id=${studentNumber}`
         );
 
-        if (!response.ok) return;
-
+        if (!response.ok) throw new Error('Failed to fetch student details');
         const text = await response.text();
-        const IdMatch = text.match(/ID:\s*(\w+)/);
-        if (IdMatch) setStudentName(`${IdMatch[1]}`);
 
-        fetchWeeklyProgress(studentId);
-        fetchTodaysModules(studentId);
-      } catch (error) {
-        console.error('Error fetching student details', error);
+        // Try to parse name more gracefully
+        const nameMatch = text.match(/Name:\s*(\w+)/i);
+        if (nameMatch) setStudentName(nameMatch[1]);
+        else setStudentName(user.username || 'Student');
+
+        // Fetch additional data
+        fetchWeeklyProgress(studentNumber);
+        fetchTodaysModules(studentNumber);
+      } catch (error: any) {
+        console.error('Error fetching student details:', error);
+        Alert.alert('Error', error.message || 'Failed to load student info.');
       }
     };
 
@@ -78,7 +89,8 @@ const StudentDashboard: React.FC = () => {
 
         setTodaysModules(todays);
       } catch (error: any) {
-        Alert.alert('Error', error.message);
+        console.error('Error fetching timetable:', error);
+        Alert.alert('Error', error.message || 'Could not fetch today’s modules.');
       } finally {
         setLoadingModules(false);
       }
@@ -97,7 +109,8 @@ const StudentDashboard: React.FC = () => {
           AttendancePercentage: data.attendancePercentage,
         });
       } catch (error: any) {
-        Alert.alert('Error', error.message);
+        console.error('Error fetching progress:', error);
+        Alert.alert('Error', error.message || 'Could not load attendance data.');
       } finally {
         setLoadingProgress(false);
       }
@@ -106,12 +119,12 @@ const StudentDashboard: React.FC = () => {
     fetchStudentDetails();
   }, []);
 
-  // Navigation Handlers
+  // Navigation handlers
   const handleReport = () => navigation.navigate('Report', { role });
   const handleCalendar = () => navigation.navigate('Calendar', { role });
   const handleAttendance = () => navigation.navigate('StudentAttendance', { role });
   const handleModule = () => navigation.navigate('StudentModules', { role });
-  const handleQrCamera = () => navigation.navigate('QrCamera', { role });
+ const handleQrCamera = () => navigation.navigate('QrCamera', { role });
 
 
   return (
@@ -125,7 +138,9 @@ const StudentDashboard: React.FC = () => {
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.header}>{studentName || 'Student'}'s Dashboard</Text>
+        <Text style={styles.header}>
+          {studentName ? `${studentName}'s Dashboard` : 'Student Dashboard'}
+        </Text>
 
         {/* Today’s Modules */}
         <View style={styles.sectionCard}>
@@ -152,10 +167,10 @@ const StudentDashboard: React.FC = () => {
           <Text style={styles.sectionTitle}>Weekly Attendance Progress</Text>
           {loadingProgress ? (
             <ActivityIndicator size="large" color="#4caf50" />
-          ) : (
+          ) : progressData ? (
             <>
               <Text style={styles.cardText}>
-                {progressData?.Attended ?? 0} / {progressData?.TotalLessons ?? 0} lessons attended
+                {progressData.Attended} / {progressData.TotalLessons} lessons attended
               </Text>
               <Progress.Bar
                 progress={progressData.AttendancePercentage / 100}
@@ -163,39 +178,53 @@ const StudentDashboard: React.FC = () => {
                 height={18}
                 color="#064f62"
                 borderRadius={8}
-                style={{ marginTop: 10, justifyContent: 'center' }}
+                style={{ marginTop: 10 }}
               />
               <Text style={[styles.cardText, { marginTop: 5 }]}>
-                {(progressData?.AttendancePercentage ?? 0).toFixed(2)}%
+                {progressData.AttendancePercentage.toFixed(2)}%
               </Text>
             </>
+          ) : (
+            <Text style={styles.cardText}>No progress data available.</Text>
           )}
         </View>
 
         {/* Buttons Grid */}
         <View style={styles.buttonGrid}>
           <TouchableOpacity style={styles.gridButton} onPress={handleAttendance}>
-            <Image source={require('./assets/images/clockin.jpg')} style={styles.gridImage} resizeMode="cover" />
+            <Image
+              source={require('./assets/images/clockin.jpg')}
+              style={styles.gridImage}
+              resizeMode="cover"
+            />
             <Text style={styles.gridText}>Clock In</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.gridButton} onPress={handleReport}>
-            <Image source={require('./assets/images/report.jpg')} style={styles.gridImage} resizeMode="cover" />
+            <Image
+              source={require('./assets/images/report.jpg')}
+              style={styles.gridImage}
+              resizeMode="cover"
+            />
             <Text style={styles.gridText}>Report Overview</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.gridButton} onPress={handleCalendar}>
-            <Image source={require('./assets/images/calendar.jpg')} style={styles.gridImage} resizeMode="cover" />
+            <Image
+              source={require('./assets/images/calendar.jpg')}
+              style={styles.gridImage}
+              resizeMode="cover"
+            />
             <Text style={styles.gridText}>Get Calendar</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.gridButton} onPress={handleModule}>
-            <Image source={require('./assets/images/modules.jpg')} style={styles.gridImage} resizeMode="cover" />
+            <Image
+              source={require('./assets/images/modules.jpg')}
+              style={styles.gridImage}
+              resizeMode="cover"
+            />
             <Text style={styles.gridText}>Your Modules</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.smallButton} onPress={handleQrCamera}>
-            <Text>Open QR Camera</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.smallButton} onPress={handleQrCamera}>
@@ -271,8 +300,18 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 5,
   },
-  gridEmoji: { fontSize: 30, color: '#fff', marginBottom: 8 },
-  gridLabel: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
+  gridImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 16,
+    position: 'absolute',
+    opacity: 0.35,
+  },
+  gridText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
   smallButton: {
     width: '100%',
     backgroundColor: '#A4C984',

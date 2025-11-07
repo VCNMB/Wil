@@ -72,7 +72,11 @@ const LecturerDashboard: React.FC = () => {
       style={styles.backgroundImage}
       resizeMode="cover"
     >
-      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
         <Text style={styles.header}>📙 {lecturerName}'s Dashboard</Text>
 
         <Text style={styles.sectionTitle}>Today’s Lessons</Text>
@@ -88,33 +92,39 @@ const LecturerDashboard: React.FC = () => {
               const lessonTime = lessonSA.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
               return (
-                <Text key={index} style={styles.cardText}>
-                  {lesson.moduleCode} — {lessonTime}
-                </Text>
+                <View key={index} style={styles.lessonItem}>
+                  <Text style={styles.lessonText}>{lesson.moduleCode}</Text>
+                  <Text style={styles.lessonTime}>{lessonTime}</Text>
+                </View>
               );
             })
           )}
         </View>
 
-        <View style={styles.buttonGrid}>
+        <View style={styles.gridContainer}>
           <TouchableOpacity style={styles.gridButton} onPress={handleReport}>
             <Text style={styles.gridTextEmoji}>📊</Text>
             <Text style={styles.gridText}>Report Overview</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.smallButton} onPress={handleCalendar}>
-            <Text>Timetable</Text>
+
+          <TouchableOpacity style={styles.gridButton} onPress={handleCalendar}>
+            <Text style={styles.gridTextEmoji}>📅</Text>
+            <Text style={styles.gridText}>Timetable</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.smallButton} onPress={handleAttendance}>
-            <Text>Clock In</Text>
+
+          <TouchableOpacity style={styles.gridButton} onPress={handleAttendance}>
+            <Text style={styles.gridTextEmoji}>🕒</Text>
+            <Text style={styles.gridText}>Clock In</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.smallButton} onPress={handleModule}>
-            <Text>Your Modules</Text>
+
+          <TouchableOpacity style={styles.gridButton} onPress={handleModule}>
+            <Text style={styles.gridTextEmoji}>📘</Text>
+            <Text style={styles.gridText}>Your Modules</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.smallButton} onPress={handleLesson}>
-            <Text>Your Lessons</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.smallButton} onPress={handleQrCamera}>
-            <Text>Open Qr Camera</Text>
+
+          <TouchableOpacity style={[styles.gridButton, styles.fullWidthButton]} onPress={handleLesson}>
+            <Text style={styles.gridTextEmoji}>📚</Text>
+            <Text style={styles.gridText}>Your Lessons</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={[styles.gridButton, styles.fullWidthButton]} onPress={handleQrCamera}>
@@ -132,82 +142,92 @@ const LecturerDashboard: React.FC = () => {
 export default LecturerDashboard;
 
 const styles = StyleSheet.create({
-  backgroundImage: { flex: 1, width: '100%', height: '100%', backgroundColor: '#FFFFFF' },
-  scrollContainer: { flex: 1, padding: 16 },
+  backgroundImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#FFFFFF',
+  },
+  scrollContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 80,
+  },
   header: {
-    fontSize: 32,
+    fontSize: 30,
     fontWeight: 'bold',
     textAlign: 'center',
     color: '#2E2E2E',
-    marginTop: 60,
-    marginBottom: 30,
+    marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 25,
-    marginVertical: 8,
+    fontSize: 22,
     fontWeight: '600',
-    color: '#838282ff',
+    color: '#4F4F4F',
     textAlign: 'center',
+    marginVertical: 10,
   },
   card: {
-    width: '100%',
-    padding: 16,
-    backgroundColor: '#A4C984',
-    borderRadius: 12,
-    marginBottom: 16,
-    alignItems: 'center',
+    backgroundColor: '#a4c984',
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
   cardText: {
-    color: '#000000',
-    fontSize: 18,
-    fontWeight: 'bold',
+    textAlign: 'center',
+    color: '#000000ff',
+    fontSize: 17,
+    fontWeight: '600',
   },
-  smallButton: {
-    backgroundColor: '#6B9B89',
-    padding: 10,
-    marginVertical: 6,
-    borderRadius: 8,
-    alignItems: 'center',
+  lessonItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+    borderBottomColor: '#C9E4B4',
+    borderBottomWidth: 1,
   },
-  buttonGrid: {
+  lessonText: {
+    fontSize: 16,
+    color: '#2E2E2E',
+    fontWeight: '600',
+  },
+  lessonTime: {
+    fontSize: 16,
+    color: '#000000ff',
+  },
+  gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginVertical: 10,
   },
   gridButton: {
     width: '48%',
-    borderRadius: 12,
-    marginVertical: 10,
+    backgroundColor: '#064F62',
+    borderRadius: 14,
+    paddingVertical: 20,
+    marginBottom: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    height: 120,
-    backgroundColor: '#064f62',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  gridText: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    paddingVertical: 6,
+    elevation: 5,
   },
   gridTextEmoji: {
-    color: '#FFFFFF',
-    fontSize: 28,
+    fontSize: 30,
+    color: '#FFF',
+  },
+  gridText: {
+    color: '#FFF',
+    fontSize: 17,
+    fontWeight: 'bold',
     textAlign: 'center',
+    marginTop: 6,
   },
   fullWidthButton: {
     width: '100%',
-    height: 120,
+    backgroundColor: '#064F62',
   },
 });

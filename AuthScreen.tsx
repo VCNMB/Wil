@@ -43,7 +43,7 @@ const AuthScreen: React.FC = () => {
       const json = JSON.parse(text);
 
       if (!response.ok || !json.success) {
-        Alert.alert('Login Failed', json.message || 'Invalid credentials');
+        Alert.alert('Login Failed:', 'Invalid credentials');
         return;
       }
 

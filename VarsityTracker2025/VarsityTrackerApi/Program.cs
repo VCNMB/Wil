@@ -28,6 +28,9 @@ namespace VarsityTrackerApi
                 });
             });
             AppContext.SetSwitch("System.Drawing.EnableUnixSupport", true);
+
+            builder.Services.AddHttpClient();
+
             var app = builder.Build();
 
             app.UseSwagger();

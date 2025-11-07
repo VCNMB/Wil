@@ -41,10 +41,10 @@ namespace VarsityTrackerApi.Controllers
                 return BadRequest("User cannot be null.");
 
             string role = user.role?.Trim().ToLower();
-            
+
             if (role == "lecturer")
             {
-                
+
                 try
                 {
                     await foreach (var existingLecturer in _lecturerTable.QueryAsync<Lecturers>())
@@ -127,7 +127,8 @@ namespace VarsityTrackerApi.Controllers
                     return StatusCode(500, $"Error saving Student: {ex.Message}");
                 }
             }
-            else if(role == "admin"){
+            else if (role == "admin")
+            {
                 try
                 {
                     // Check if a student with the same email already exists
@@ -276,7 +277,7 @@ namespace VarsityTrackerApi.Controllers
             }
             catch
             {
-                return BadRequest(new {success = false, message = "Stored password format is invalid." });
+                return BadRequest(new { success = false, message = "Stored password format is invalid." });
             }
 
             if (!passwordValid)
@@ -372,14 +373,14 @@ namespace VarsityTrackerApi.Controllers
             await containerClient.CreateIfNotExistsAsync();
             var blobClient = containerClient.GetBlobClient($"{filename}.svg");
             await blobClient.UploadAsync(fileStream, overwrite: true);
-            return blobClient.Uri.ToString(); 
+            return blobClient.Uri.ToString();
         }
         private Stream GenerateQrSvgStream(string content)
         {
             using var qrGenerator = new QRCodeGenerator();
             using var qrCodeData = qrGenerator.CreateQrCode(content, QRCodeGenerator.ECCLevel.Q);
             var svgQr = new SvgQRCode(qrCodeData);
-            string svg = svgQr.GetGraphic(4); 
+            string svg = svgQr.GetGraphic(4);
 
             var bytes = Encoding.UTF8.GetBytes(svg);
             var stream = new MemoryStream(bytes);
@@ -500,6 +501,48 @@ namespace VarsityTrackerApi.Controllers
             // Not found
             return NotFound(new { success = false, message = "User not found." });
 
+        }
+
+        [HttpPut("change_student_password/{studentNum}")]
+        public async Task<IActionResult> ChangeStudentPassword(string studentNum, [FromBody] PasswordChangeRequest request)
+        {
+            await foreach (var student in _studentTable.QueryAsync<Students>())
+            {
+                if (student.studentNumber == studentNum)
+                {
+                    // Hash the new password before saving
+                    string hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+
+                    student.password = hashedPassword;
+
+                    await _studentTable.UpdateEntityAsync(student, student.ETag, TableUpdateMode.Replace);
+
+                    return Ok("Password updated successfully.");
+                }
+            }
+
+            return NotFound("Student not found.");
+        }
+
+        [HttpPut("change_lecturer_password/{lecturerID}")]
+        public async Task<IActionResult> ChangeLecturerPassword(string lecturerID, [FromBody] PasswordChangeRequest request)
+        {
+            await foreach (var lecturer in _lecturerTable.QueryAsync<Lecturers>())
+            {
+                if (lecturer.lecturerID == lecturerID)
+                {
+                    // Hash the new password before saving
+                    string hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+
+                    lecturer.password = hashedPassword;
+
+                    await _lecturerTable.UpdateEntityAsync(lecturer, lecturer.ETag, TableUpdateMode.Replace);
+
+                    return Ok("Password updated successfully.");
+                }
+            }
+
+            return NotFound("Lecturer not found.");
         }
     }
 }

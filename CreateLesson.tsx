@@ -165,8 +165,8 @@ const CreateLesson: React.FC = () => {
           </Picker>
 
           <Picker
-            selectedValue={courseCode}
-            onValueChange={(value) => setCourseCode(value)}
+            selectedValue={classroom}
+            onValueChange={(value) => setClassroom(value)}
             style={styles.input}
           >
             <Picker.Item label="Select Classroom" value="" />
