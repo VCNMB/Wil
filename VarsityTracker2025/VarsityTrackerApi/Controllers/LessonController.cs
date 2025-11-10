@@ -234,63 +234,55 @@ namespace VarsityTrackerApi.Controllers
         //    return Ok(new { message = "QR Generated", qrCodeUrl = publicUrl });
         //}
 
-        //[HttpPost("scanQRCode")]
-        //public async Task<IActionResult> ScanQRCode([FromBody] QRScanRequest request)
-        //{
-        //    if (string.IsNullOrWhiteSpace(request.QRText))
-        //        return BadRequest("QRText is required.");
+        [HttpPost("scanQRCode")]
+        public async Task<IActionResult> ScanQRCode([FromBody] QRScanRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.QRText))
+                return BadRequest("QRText (which is the LessonID) is required.");
 
-        //    if (string.IsNullOrWhiteSpace(request.StudentID))
-        //        return BadRequest("StudentID is required.");
+            if (string.IsNullOrWhiteSpace(request.StudentID))
+                return BadRequest("StudentID is required.");
 
-        //    // Parse QR Format: LessonID:xyz|Module:abc|Course:def|Date:...
-        //    var parts = request.QRText.Split('|', StringSplitOptions.RemoveEmptyEntries);
-        //    var data = parts.ToDictionary(
-        //        p => p.Split(':', 2)[0],
-        //        p => p.Split(':', 2)[1]
-        //    );
+            // The QR text *is* the Lesson ID, no parsing needed.
+            string lessonID = request.QRText;
+            // ------------------------
 
-        //    if (!data.ContainsKey("LessonID"))
-        //        return BadRequest("QRText does not contain LessonID.");
+            // Find lesson
+            Lesson lesson = null;
+            await foreach (var l in _lessonTable.QueryAsync<Lesson>(x => x.lessonID == lessonID))
+            {
+                lesson = l;
+                break;
+            }
 
-        //    string lessonID = data["LessonID"];
+            if (lesson == null)
+                return NotFound(new { message = "Invalid QR - lesson not found." });
 
-        //    // Find lesson
-        //    Lesson lesson = null;
-        //    await foreach (var l in _lessonTable.QueryAsync<Lesson>(x => x.lessonID == lessonID))
-        //    {
-        //        lesson = l;
-        //        break;
-        //    }
+            if (!lesson.started)
+                return BadRequest(new { message = "Lesson has not started yet." });
+            if (lesson.finished)
+                return BadRequest(new { message = "Lesson has already ended." });
 
-        //    if (lesson == null)
-        //        return NotFound("Invalid QR - lesson not found.");
+            // Check attendance table for duplicates
+            await foreach (var a in _attendanceTable.QueryAsync<Attendance>(x => x.lessonID == lessonID && x.studentID == request.StudentID))
+            {
+                return BadRequest(new { message = "Already clocked-in." });
+            }
 
-        //    if (!lesson.started)
-        //        return BadRequest("Lesson has not started yet.");
-        //    if (lesson.finished)
-        //        return BadRequest("Lesson has already ended.");
+            // Create attendance record
+            var attendance = new Attendance
+            {
+                PartitionKey = "Attendance",
+                RowKey = Guid.NewGuid().ToString(),
+                lessonID = lessonID,
+                studentID = request.StudentID,
+                timestamp = DateTime.UtcNow
+            };
 
-        //    // Check attendance table for duplicates
-        //    await foreach (var a in _attendanceTable.QueryAsync<Attendance>(x => x.lessonID == lessonID && x.studentID == request.StudentID))
-        //    {
-        //        return BadRequest("Already clocked-in.");
-        //    }
+            await _attendanceTable.AddEntityAsync(attendance);
 
-        //    // Create attendance record
-        //    var attendance = new Attendance
-        //    {
-        //        PartitionKey = "Attendance",
-        //        RowKey = Guid.NewGuid().ToString(),
-        //        lessonID = lessonID,
-        //        studentID = request.StudentID,
-        //        timestamp = DateTime.UtcNow
-        //    };
-
-        //    await _attendanceTable.AddEntityAsync(attendance);
-
-        //    return Ok(new { message = "Clock-in successful!" });
-        //}
+            return Ok(new { message = "Clock-in successful!" });
+        }
 
         [HttpPost("clockin/{studentNumber}/{lessonID}")]
         public async Task<IActionResult> StudentList(string studentNumber, string lessonID)
@@ -761,5 +753,10 @@ namespace VarsityTrackerApi.Controllers
                 return StatusCode(500, $"Error retrieving lessons: {ex.Message}");
             }
         }
+    }
+    public class QRScanRequest
+    {
+        public string QRText { get; set; }
+        public string StudentID { get; set; }
     }
 }

@@ -23,6 +23,7 @@ const StudentQrCamera: React.FC<Props> = ({ studentNumber, lessonID }) => {
   const [loading, setLoading] = useState(false);
   const [scanned, setScanned] = useState(false);
 
+  // <-- 3. FIXED THE TRY/CATCH STRUCTURE
   const onSuccess = async (e: any) => {
     if (scanned) return; // Prevent duplicate scans
     setScanned(true);

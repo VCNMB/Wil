@@ -1,0 +1,59 @@
+version: 2.1
+
+jobs:
+  # Job 1: Build and Test JavaScript
+  build_and_test_js:
+    docker:
+      - image: cimg/node:18.17.0
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "package-lock.json" }}
+            - v1-dependencies-
+      - run:
+          name: Install Dependencies
+          command: npm ci
+      - save_cache:
+          paths:
+            - node_modules
+          key: v1-dependencies-{{ checksum "package-lock.json" }}
+      - run:
+          name: Run Tests
+          command: npm test
+
+  # Job 2: Build Android .apk file
+  build_android:
+    # Use the -node variant image
+    docker:
+      - image: cimg/android:2025.10-node
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "package-lock.json" }}
+            - v1-dependencies-
+      - run:
+          name: Install Dependencies
+          command: npm ci
+
+      - run:
+          name: Build Android App
+          command: |
+            cd android
+            chmod +x ./gradlew
+            ./gradlew assembleRelease
+
+      - store_artifacts:
+          path: android/app/build/outputs/apk/release/app-release.apk
+          destination: AttndEase.apk
+
+workflows:
+  build_test_and_deploy:
+    jobs:
+      - build_and_test_js
+      - build_android:
+          requires:
+            - build_and_test_js
